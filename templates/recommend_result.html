@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer's Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #a5c787;
+            font-family: 'Poppins', sans-serif;
+        }
+        .content-card {
+            background-color: #f8f3e9;
+            border-radius: 20px;
+        }
+        .top-bar {
+            background-color: #8fb586;
+        }
+        .header {
+          background-color: #e9f1e5;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .dropdown {
+          position: relative;
+          display: inline-block;
+      }
+      .dropdown-content {
+          display: none;
+          position: absolute;
+          background-color: #f8f3e9;
+          min-width: 200px;
+          box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+          z-index: 10;
+          border-radius: 8px;
+          right: 0;
+          overflow: hidden;
+      }
+      .dropdown-content a {
+          color: #333;
+          padding: 12px 16px;
+          text-decoration: none;
+          display: block;
+          transition: background-color 0.3s;
+      }
+      .dropdown-content a:hover {
+          background-color: #e9f1e5;
+      }
+      .dropdown:hover .dropdown-content {
+          display: block;
+          animation: fadeIn 0.3s;
+      }
+      @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
+      .nav-item {
+          position: relative;
+      }
+      .nav-item::after {
+          content: '';
+          position: absolute;
+          width: 0;
+          height: 2px;
+          bottom: 0;
+          left: 50%;
+          background-color: #333;
+          transition: all 0.3s ease;
+      }
+      .nav-item:hover::after {
+          width: 100%;
+          left: 0;
+      }
+      .action-btn {
+          background-color: #222222;
+          color: white;
+          border-radius: 25px;
+          transition: all 0.3s ease;
+      }
+      .action-btn:hover {
+          opacity: 0.9;
+          transform: scale(1.02);
+      }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <header class="header py-4 sticky top-0 z-50">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+          <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+              <i class="bi bi-flower1 text-green-600 mr-2"></i>
+              <a href="{{ url_for('home') }}">Farmer's Assistant</a>
+          </h1>
+          <nav class="hidden md:flex space-x-6">
+              <a href="{{ url_for('home') }}" class="text-gray-800 hover:text-gray-600 nav-item py-2">Home</a>
+              <a href="#" class="text-gray-800 hover:text-gray-600 nav-item py-2">About us</a>
+              <div class="dropdown nav-item py-2">
+                  <a href="#" class="text-gray-800 hover:text-gray-600 flex items-center">
+                      Services
+                      <i class="bi bi-chevron-down ml-1 text-sm"></i>
+                  </a>
+                  <div class="dropdown-content">
+                      <a href="{{ url_for('crop_recommendation') }}" class="flex items-center">
+                          <i class="bi bi-tree text-green-600 mr-2"></i>
+                          Crop Recommendation
+                      </a>
+                      <a href="{{ url_for('find_crop_disease') }}" class="flex items-center">
+                          <i class="bi bi-bug text-red-500 mr-2"></i>
+                          Disease Detection
+                      </a>
+                  </div>
+              </div>
+          </nav>
+          <div class="dropdown">
+              {% if 'user_id' in session %}
+              <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                  <i class="bi bi-person text-2xl"></i>
+              </div>
+              <div class="dropdown-content">
+                  <div class="px-4 py-3 text-sm text-gray-700 border-b border-gray-200">
+                      <div class="font-medium">{{ session.get('user_name', 'Farmer') }}</div>
+                      <div class="truncate">farmer@example.com</div>
+                  </div>
+                  <a href="#" class="flex items-center">
+                      <i class="bi bi-gear mr-2"></i>
+                      Settings
+                  </a>
+                  <a href="{{ url_for('logout') }}" class="flex items-center text-red-500">
+                      <i class="bi bi-box-arrow-right mr-2"></i>
+                      Logout
+                  </a>
+              </div>
+              {% else %}
+              <div class="flex items-center space-x-4">
+                  <a href="{{ url_for('login') }}" class="text-gray-800 hover:text-gray-600">Login</a>
+                  <a href="{{ url_for('register') }}" class="action-btn px-4 py-2">Register</a>
+              </div>
+              {% endif %}
+          </div>
+      </div>
+  </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="content-card p-6 shadow-lg">
+            <!-- Crop Header -->
+            <div class="flex items-center gap-20 mb-6">
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center animate-pulse">
+                  <i class="bi bi-flower1 text-white"></i>
+                </div>
+                <span class="text-4xl font-bold">Crop Recommended: 
+                  <span class="text-green-700 text-4xl font-semibold">{{ result.name }} ({{ result.devnagri_name }})</span>
+                </span>
+              </div>
+              <div class="w-32 h-32 border border-gray-300 rounded-md flex items-center justify-center bg-white shadow-md hover:shadow-xl transition-shadow duration-300">
+                <img 
+                  src="{{ result.image_url }}" 
+                  alt="{{ result.name }}" 
+                  class="rounded-lg object-cover" 
+                  style="max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+              </div>
+            </div>
+          
+            <!-- Crop Information -->
+            <div class="crop-info mt-5 border border-black rounded-lg">
+              <div class="bg-green-600 text-white rounded-t-lg px-4 py-2">
+                <h4 class="text-lg font-semibold">{{ result.name }} Information</h4>
+              </div>
+              <div class="p-4">
+                
+                <!-- Description -->
+                <div class="bg-yellow-100 p-4 rounded-lg shadow-md hover:border-2 hover:border-yellow-800 hover:shadow-lg hover:shadow-yellow-300 transition-all mb-4">
+                  <h5 class="font-semibold text-yellow-800 mb-2">Description</h5>
+                  <p>{{ result.description }}</p>
+                </div>
+            
+                <!-- Growing Season -->
+                <div class="bg-blue-100 p-4 rounded-lg shadow-md hover:border-2 hover:border-blue-800 hover:shadow-lg hover:shadow-blue-300 transition-all mb-4">
+                  <h5 class="font-semibold text-blue-800 mb-2">Growing Season</h5>
+                  <p>{{ result.growing_season }}</p>
+                </div>
+            
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            
+                  <!-- Water Requirements -->
+                  <div class="bg-green-100 p-4 rounded-lg shadow-md hover:border-2 hover:border-green-800 hover:shadow-lg hover:shadow-green-300 transition-all">
+                    <h5 class="font-semibold text-green-800 mb-2">Water Requirements (mm)</h5>
+                    <p>{{ result.water_requirements }}</p>
+                  </div>
+            
+                  <!-- Soil Requirements -->
+                  <div class="bg-yellow-50 p-4 rounded-lg shadow-md hover:border-2 hover:border-yellow-600 hover:shadow-lg hover:shadow-yellow-200 transition-all">
+                    <h5 class="font-semibold text-yellow-700 mb-2">Soil Requirements</h5>
+                    <p>{{ result.soil_requirements }}</p>
+                  </div>
+            
+                  <!-- Common Varieties -->
+                  <div class="bg-gray-100 p-4 rounded-lg shadow-md hover:border-2 hover:border-gray-700 hover:shadow-lg hover:shadow-gray-300 transition-all">
+                    <h5 class="font-semibold text-gray-800 mb-2">Common Varieties</h5>
+                    <ul class="list-disc list-inside">
+                      {% for variety in result.common_varieties %}
+                        <li>{{ variety }}</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+            
+                  <!-- Cultivation Tips -->
+                  <div class="bg-indigo-100 p-4 rounded-lg shadow-md hover:border-2 hover:border-indigo-700 hover:shadow-lg hover:shadow-indigo-300 transition-all">
+                    <h5 class="font-semibold text-indigo-800 mb-2">Cultivation Tips</h5>
+                    <p>{{ result.cultivation_tips }}</p>
+                  </div>
+            
+                </div>
+            
+                <!-- Major Growing Regions -->
+                <div class="bg-red-50 p-4 rounded-lg shadow-md hover:border-2 hover:border-red-600 hover:shadow-lg hover:shadow-red-200 transition-all">
+                  <h5 class="font-semibold text-red-700 mb-2">Major Growing Regions</h5>
+                  <p>{{ ", ".join(result.major_growing_regions) }}</p>
+                </div>
+                
+              </div>
+            </div>
+            
+          
+            <!-- Try Another Button -->
+            <div class="flex justify-center mt-6">
+              <button 
+                onclick="window.location.href='{{ url_for('crop_recommendation') }}'" 
+                class="action-btn px-8 py-3 font-medium flex items-center">
+                Try Another
+              </button>
+            </div>
+          </div>
+          
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center mt-12 p-6 text-sm bg-[#e9f1e5] text-black">
+      <div class="container mx-auto">
+          <div class="grid md:grid-cols-3 gap-4 mb-6 text-left">
+              <div>
+                  <h3 class="font-semibold mb-3">Farmer's Assistant</h3>
+                  <p class="text-black">Helping farmers make data-driven decisions to optimize crop yields and farming operations.</p>
+              </div>
+              <div>
+                  <h3 class="font-semibold mb-3">Quick Links</h3>
+                  <ul class="space-y-1">
+                      <li><a href="#" class="text-black  hover:text-[#a5c787] transition">About Us</a></li>
+                      <li><a href="#" class="text-black  hover:text-[#a5c787] transition">Home</a></li>
+                      <li><a href="#" class="text-black  hover:text-[#a5c787] transition">Services</a></li>
+                      <li><a href="#" class="text-black  hover:text-[#a5c787] transition">Contact</a></li>
+                  </ul>
+              </div>
+              <div>
+                  <h3 class="font-semibold mb-3">Connect With Us</h3>
+                  <div class="flex gap-3">
+                      <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-facebook"></i></a>
+                      <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-twitter-x"></i></a>
+                      <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-instagram"></i></a>
+                      <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-linkedin"></i></a>
+                  </div>
+              </div>
+          </div>
+          <div class="border-t border-gray-800 pt-4">
+              © 2025 Farmer's Assistant. All rights reserved.
+              <div class="flex justify-center items-center gap-1 mt-1">
+                  Made with <i class="bi bi-heart-fill text-red-500"></i> by Farmer's Assistant
+              </div>
+          </div>
+      </div>
+  </footer>
+
+    <!--script>
+        // Sample crop data
+        const crops = [
+            {
+                name: "Wheat",
+                description: "A cereal grain that is a worldwide staple food.",
+                growingSeason: "Winter to Spring",
+                waterReq1: "450-650",
+                waterReq2: "500-700",
+                soilReq1: "Well-draining loamy soil",
+                soilReq2: "pH 6.0-7.0",
+                regions: "Punjab, Haryana, Uttar Pradesh"
+            },
+            {
+                name: "Rice",
+                description: "The seed of the grass species Oryza sativa.",
+                growingSeason: "Summer to Fall",
+                waterReq1: "1200-1600",
+                waterReq2: "1300-1800",
+                soilReq1: "Clay or clay loam",
+                soilReq2: "pH 5.5-6.5",
+                regions: "West Bengal, Tamil Nadu, Punjab"
+            }
+        ];
+
+        // Function to update crop information
+        function updateCropInfo(crop) {
+            document.getElementById('cropName').textContent = crop.name;
+            document.getElementById('description').textContent = crop.description;
+            document.getElementById('growingSeason').textContent = crop.growingSeason;
+            document.getElementById('waterReq1').textContent = crop.waterReq1;
+            document.getElementById('waterReq2').textContent = crop.waterReq2;
+            document.getElementById('soilReq1').textContent = crop.soilReq1;
+            document.getElementById('soilReq2').textContent = crop.soilReq2;
+            document.getElementById('regions').textContent = crop.regions;
+        }
+
+        // Function to get a new random crop
+        function getNewCrop() {
+            const randomCrop = crops[Math.floor(Math.random() * crops.length)];
+            updateCropInfo(randomCrop);
+        }
+
+        // Initialize with first crop
+        window.onload = () => {
+            getNewCrop();
+        };
+    </script>
+</body>
+</html>

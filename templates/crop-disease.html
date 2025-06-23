@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer's Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #a5c787;
+            font-family: 'Poppins', sans-serif;
+        }
+        .card {
+            background-color: #f5f0e6;
+            border-radius: 15px;
+        }
+        .header-bg {
+            background-color: #90a890;
+        }
+        .header {
+            background-color: #e9f1e5;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f8f3e9;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 10;
+            border-radius: 8px;
+            right: 0;
+            overflow: hidden;
+        }
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        .dropdown-content a:hover {
+            background-color: #e9f1e5;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-item {
+            position: relative;
+        }
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background-color: #333;
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover::after {
+            width: 100%;
+            left: 0;
+        }
+        .action-btn {
+            background-color: #222222;
+            color: white;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header py-4 sticky top-0 z-50">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                <i class="bi bi-flower1 text-green-600 mr-2"></i>
+                <a href="{{ url_for('home') }}">Farmer's Assistant</a>
+            </h1>
+            <nav class="hidden md:flex space-x-6">
+                <a href="{{ url_for('home') }}" class="text-gray-800 hover:text-gray-600 nav-item py-2">Home</a>
+                <a href="#" class="text-gray-800 hover:text-gray-600 nav-item py-2">About us</a>
+                <div class="dropdown nav-item py-2">
+                    <a href="#" class="text-gray-800 hover:text-gray-600 flex items-center">
+                        Services
+                        <i class="bi bi-chevron-down ml-1 text-sm"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('crop_recommendation') }}" class="flex items-center">
+                            <i class="bi bi-tree text-green-600 mr-2"></i>
+                            Crop Recommendation
+                        </a>
+                        <a href="{{ url_for('find_crop_disease') }}" class="flex items-center">
+                            <i class="bi bi-bug text-red-500 mr-2"></i>
+                            Disease Detection
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            <div class="dropdown">
+                {% if 'user_id' in session %}
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                    <i class="bi bi-person text-2xl"></i>
+                </div>
+                <div class="dropdown-content">
+                    <div class="px-4 py-3 text-sm text-gray-700 border-b border-gray-200">
+                        <div class="font-medium">{{ session.get('user_name', 'Farmer') }}</div>
+                        <div class="truncate">farmer@example.com</div>
+                    </div>
+                    <a href="#" class="flex items-center">
+                        <i class="bi bi-gear mr-2"></i>
+                        Settings
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="flex items-center text-red-500">
+                        <i class="bi bi-box-arrow-right mr-2"></i>
+                        Logout
+                    </a>
+                </div>
+                {% else %}
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('login') }}" class="text-gray-800 hover:text-gray-600">Login</a>
+                    <a href="{{ url_for('register') }}" class="action-btn px-4 py-2">Register</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 mt-8">
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Corn Disease Detection Card -->
+<div class="card p-6">
+    <div class="flex items-center gap-3 mb-6">
+        <i class="bi bi-tree text-3xl text-green-700"></i>
+        <h2 class="text-xl font-semibold">Corn Disease Detection</h2>
+    </div>
+
+    <div class="card-body">
+        
+
+        {% if prediction %}
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <!-- Detection Result -->
+            <div class="card p-4 shadow">
+                <div class="bg-blue-600 text-white px-4 py-2 rounded-t-lg">
+                    <h5 class="font-semibold">Detection Result</h5>
+                </div>
+                <div class="mt-4">
+                    <h4 class="text-lg font-medium"><i class="bi bi-activity me-2"></i>Detected Condition:</h4>
+                    <p class="text-gray-800">{{ prediction.replace('___', ' - ').replace('_', ' ') }}</p>
+
+                    <h5 class="text-lg mt-4 font-medium"><i class="bi bi-bar-chart me-2"></i>Confidence:</h5>
+                    <div class="w-full bg-gray-200 rounded-full h-5 mt-1">
+                        <div class="bg-green-500 h-5 rounded-full text-white text-sm flex items-center justify-center"
+                             style="width: {{ (confidence * 100)|round|int }}%">
+                            {{ (confidence * 100)|round|int }}%
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h5 class="font-semibold mb-2">Recommended Actions:</h5>
+                        <ul class="list-disc pl-6 text-gray-700 space-y-1">
+                            {% if 'healthy' in prediction.lower() %}
+                            <li>Continue with regular maintenance and care</li>
+                            <li>Monitor for any changes in leaf appearance</li>
+                            <li>Maintain proper watering and fertilization schedule</li>
+                            {% else %}
+                            <li>Isolate affected plants to prevent spread</li>
+                            <li>Remove and dispose of severely infected leaves</li>
+                            <li>Consider applying appropriate fungicides or treatments</li>
+                            <li>Improve air circulation around plants</li>
+                            <li>Consult with a local agricultural extension specialist</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uploaded Image -->
+            <div class="card p-4 text-center shadow">
+                <div class="bg-gray-700 text-white px-4 py-2 rounded-t-lg">
+                    <h5 class="font-semibold">Uploaded Image</h5>
+                </div>
+                <div class="mt-4">
+                    <img id="output-image" src="{{ url_for('send_file', filename=file_name) }}"
+                         class="mx-auto rounded shadow max-h-80 object-contain"
+                         alt="Uploaded Image"
+                         onerror="this.src='./static/images/upload.jpg'">
+                    <p class="italic mt-2 text-gray-600">{{ file_name }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Form -->
+        <form method="POST" action="{{ url_for('find_crop_disease') }}" enctype="multipart/form-data" class="mt-6 p-6 bg-white rounded-lg shadow-md border border-green-100">
+            <!-- Header Section -->
+            <div class="mb-5 border-l-4 border-green-500 pl-4">
+                <h3 class="text-xl font-bold text-green-800">Corn Disease Detection</h3>
+                <p class="text-gray-600 text-sm mt-1">Upload a clear image of the corn plant for accurate disease identification</p>
+                <input type="hidden" name="crop" value="maize">
+            </div>
+            
+            <!-- Upload Section -->
+            <div class="mb-6">
+                <label for="file" class="block mb-2 font-medium text-gray-700">Upload Plant Image</label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-green-300 border-dashed rounded-lg cursor-pointer bg-green-50 hover:bg-green-100 transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="mb-1 text-sm text-gray-700">Click to upload or drag and drop</p>
+                            <p class="text-xs text-gray-500">JPG, JPEG, PNG formats accepted</p>
+                        </div>
+                        <input id="file" name="file" type="file" class="hidden" accept="image/*" required onchange="preview_image(event)">
+                    </label>
+                </div>
+                
+                <!-- Image Preview -->
+                <div class="mt-4 flex justify-center">
+                    <img id="output-image" class="hidden max-h-64 rounded-lg shadow-md" />
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="flex justify-center">
+                <button type="submit" class="px-6 py-3 bg-green-600 text-white font-medium rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                    </svg>
+                    Analyze Disease
+                </button>
+            </div>
+            
+            <!-- Tips Section -->
+            
+        </form>
+        <div class="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+                <h5 class="font-medium text-green-800 mb-2 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Tips for better detection:
+                </h5>
+                <ul class="text-gray-700 space-y-2 pl-6">
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 mt-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Ensure good lighting when taking photos
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 mt-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Focus on affected areas of the leaves
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 mt-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Take multiple photos if needed
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 mt-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Include both healthy and unhealthy parts of the plant for comparison
+                    </li>
+                </ul>
+            </div>
+        <script>
+            function preview_image(event) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    var output = document.getElementById('output-image');
+                    output.src = reader.result;
+                    output.classList.remove('hidden');
+                }
+                reader.readAsDataURL(event.target.files[0]);
+            }
+        </script>
+    </div>
+</div>
+                
+            <!-- Weather Card -->
+            <div class="card p-6">
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-cloud-sun text-3xl text-gray-600"></i>
+                    <h2 class="text-xl font-semibold">Weather</h2>
+                </div>
+                <div id="weather-content" class="mt-4">
+                    <!-- Weather data will be populated here -->
+                </div>
+            </div>    
+        
+    </main>
+        <!-- Footer -->
+        <!-- Footer -->
+        <footer class="text-center mt-12 p-6 text-sm bg-[#e9f1e5] text-black">
+            <div class="container mx-auto">
+                <div class="grid md:grid-cols-3 gap-4 mb-6 text-left">
+                    <div>
+                        <h3 class="font-semibold mb-3">Farmer's Assistant</h3>
+                        <p class="text-black">Helping farmers make data-driven decisions to optimize crop yields and farming operations.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-3">Quick Links</h3>
+                        <ul class="space-y-1">
+                            <li><a href="#" class="text-black  hover:text-[#a5c787] transition">About Us</a></li>
+                            <li><a href="#" class="text-black  hover:text-[#a5c787] transition">Home</a></li>
+                            <li><a href="#" class="text-black  hover:text-[#a5c787] transition">Services</a></li>
+                            <li><a href="#" class="text-black  hover:text-[#a5c787] transition">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-3">Connect With Us</h3>
+                        <div class="flex gap-3">
+                            <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-facebook"></i></a>
+                            <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-twitter-x"></i></a>
+                            <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-instagram"></i></a>
+                            <a href="#" class="text-black hover:text-[#a5c787] transition"><i class="bi bi-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-gray-800 pt-4">
+                    © 2025 Farmer's Assistant. All rights reserved.
+                    <div class="flex justify-center items-center gap-1 mt-1">
+                        Made with <i class="bi bi-heart-fill text-red-500"></i> by Farmer's Assistant
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+
+<script type="text/javascript">
+  function preview_image(event) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var output = document.getElementById('output-image');
+      output.src = reader.result;
+    }
+    reader.readAsDataURL(event.target.files[0]);
+  }
+</script>
+// Add this script to the bottom of your crop-disease.html page, just before the closing </body> tag
+
+<script>
+    // Weather section initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        const weatherContent = document.getElementById('weather-content');
+        
+        // First show a loading state
+        weatherContent.innerHTML = `
+            <div class="flex justify-center items-center p-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <p class="ml-2">Getting weather data for your location...</p>
+            </div>
+        `;
+        
+        // Get user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                position => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    fetchWeatherData(lat, lon);
+                },
+                // Error callback
+                error => {
+                    console.error("Geolocation error:", error);
+                    weatherContent.innerHTML = `
+                        <div class="p-4 text-center">
+                            <i class="bi bi-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
+                            <p>Unable to access your location. ${error.message}</p>
+                            <button onclick="requestLocationPermission()" class="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                Allow Location Access
+                            </button>
+                        </div>
+                    `;
+                },
+                // Options
+                { timeout: 10000 }
+            );
+        } else {
+            weatherContent.innerHTML = `
+                <div class="p-4 text-center">
+                    <i class="bi bi-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
+                    <p>Geolocation is not supported by your browser.</p>
+                </div>
+            `;
+        }
+    });
+    
+    // Function to request location permission again
+    function requestLocationPermission() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    fetchWeatherData(lat, lon);
+                },
+                error => {
+                    const weatherContent = document.getElementById('weather-content');
+                    weatherContent.innerHTML = `
+                        <div class="p-4 text-center">
+                            <i class="bi bi-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
+                            <p>Permission denied. Please enable location services in your browser settings.</p>
+                        </div>
+                    `;
+                }
+            );
+        }
+    }
+    
+    // Function to fetch weather data using OpenWeatherMap API
+    function fetchWeatherData(lat, lon) {
+        const weatherContent = document.getElementById('weather-content');
+        
+        // OpenWeatherMap API key - replace with your actual API key
+        const apiKey = '1fb068de47d9394f1bf455edd5419801';
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Get weather icon
+                const iconCode = data.weather[0].icon;
+                
+                // Map weather condition to Bootstrap icon class
+                const weatherIconMap = {
+                    '01d': 'bi-sun', // clear sky day
+                    '01n': 'bi-moon', // clear sky night
+                    '02d': 'bi-cloud-sun', // few clouds day
+                    '02n': 'bi-cloud-moon', // few clouds night
+                    '03d': 'bi-cloud', // scattered clouds
+                    '03n': 'bi-cloud', // scattered clouds
+                    '04d': 'bi-clouds', // broken clouds
+                    '04n': 'bi-clouds', // broken clouds
+                    '09d': 'bi-cloud-drizzle', // shower rain
+                    '09n': 'bi-cloud-drizzle', // shower rain
+                    '10d': 'bi-cloud-rain', // rain day
+                    '10n': 'bi-cloud-rain', // rain night
+                    '11d': 'bi-cloud-lightning', // thunderstorm
+                    '11n': 'bi-cloud-lightning', // thunderstorm
+                    '13d': 'bi-snow', // snow
+                    '13n': 'bi-snow', // snow
+                    '50d': 'bi-cloud-fog', // mist
+                    '50n': 'bi-cloud-fog' // mist
+                };
+                
+                const iconClass = weatherIconMap[iconCode] || 'bi-cloud';
+                
+                // Get location name
+                const cityName = data.name;
+                const country = data.sys.country;
+                
+                // Format temperature and other data
+                const temp = Math.round(data.main.temp);
+                const description = data.weather[0].description;
+                const windSpeed = Math.round(data.wind.speed * 3.6); // convert m/s to km/h
+                const humidity = data.main.humidity;
+                const feelsLike = Math.round(data.main.feels_like);
+                
+                // Calculate precipitation (if available)
+                let precipitation = '0 mm';
+                if (data.rain && data.rain['1h']) {
+                    precipitation = `${data.rain['1h']} mm`;
+                }
+                
+                // Add farming tip based on weather condition
+                let farmingTip = '';
+                let diseaseRiskLevel = '';
+                let diseaseRiskClass = '';
+                
+                if (iconCode.startsWith('01') || iconCode.startsWith('02')) {
+                    farmingTip = 'Good weather for field inspections and monitoring crop health.';
+                    if (humidity > 70) {
+                        diseaseRiskLevel = 'Moderate';
+                        diseaseRiskClass = 'text-yellow-600';
+                    } else {
+                        diseaseRiskLevel = 'Low';
+                        diseaseRiskClass = 'text-green-600';
+                    }
+                } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
+                    farmingTip = 'Increased disease risk due to high moisture. Monitor crops closely.';
+                    diseaseRiskLevel = 'High';
+                    diseaseRiskClass = 'text-red-600';
+                } else if (iconCode.startsWith('11')) {
+                    farmingTip = 'Potential crop damage from heavy rain and lightning. Check after storm passes.';
+                    diseaseRiskLevel = 'High';
+                    diseaseRiskClass = 'text-red-600';
+                } else if (iconCode.startsWith('13')) {
+                    farmingTip = 'Low temperatures may slow disease progression but watch for frost damage.';
+                    diseaseRiskLevel = 'Low';
+                    diseaseRiskClass = 'text-green-600';
+                } else if (iconCode.startsWith('50')) {
+                    farmingTip = 'High humidity in foggy conditions increases disease risk.';
+                    diseaseRiskLevel = 'High';
+                    diseaseRiskClass = 'text-red-600';
+                } else {
+                    farmingTip = 'Regular monitoring of crop health is recommended.';
+                    diseaseRiskLevel = 'Moderate';
+                    diseaseRiskClass = 'text-yellow-600';
+                }
+                
+                // Update the weather display
+                weatherContent.innerHTML = `
+                    <div class="bg-white bg-opacity-75 rounded-lg p-4">
+                        <div class="flex flex-col md:flex-row items-start md:items-center">
+                            <div class="flex items-center mr-6 mb-3 md:mb-0">
+                                <i class="bi ${iconClass} text-5xl mr-4 text-blue-600"></i>
+                                <div>
+                                    <p class="text-md font-medium">${cityName}, ${country}</p>
+                                    <p class="text-3xl font-bold">${temp}°C</p>
+                                    <p class="text-sm text-gray-600">Feels like: ${feelsLike}°C</p>
+                                    <p class="capitalize text-gray-700">${description}</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Wind</p>
+                                    <p class="font-semibold">${windSpeed} km/h</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Humidity</p>
+                                    <p class="font-semibold">${humidity}%</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Precipitation</p>
+                                    <p class="font-semibold">${precipitation}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 grid md:grid-cols-2 gap-4">
+                            <!-- Farming Tip -->
+                            <div class="p-3 bg-green-50 rounded-lg">
+                                <p class="text-gray-700">
+                                    <i class="bi bi-lightbulb text-yellow-500 mr-2"></i> 
+                                    <strong>Farming Tip:</strong> ${farmingTip}
+                                </p>
+                            </div>
+                            
+                            <!-- Disease Risk -->
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="flex items-center">
+                                    <i class="bi bi-shield-exclamation text-blue-600 mr-2"></i>
+                                    <span><strong>Disease Risk:</strong> 
+                                        <span class="font-bold ${diseaseRiskClass}">${diseaseRiskLevel}</span>
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-sm text-gray-600">
+                                <i class="bi bi-geo-alt mr-1"></i> Weather data for your current location
+                                <button onclick="refreshWeather()" class="ml-2 text-green-600 hover:text-green-800 transition">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching weather data:', error);
+                weatherContent.innerHTML = `
+                    <div class="p-4 text-center">
+                        <i class="bi bi-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
+                        <p>Unable to fetch weather data. Please try again later.</p>
+                        <button onclick="retryFetchWeather(${lat}, ${lon})" class="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Function to retry fetching weather data
+    function retryFetchWeather(lat, lon) {
+        fetchWeatherData(lat, lon);
+    }
+    
+    // Function to refresh weather data
+    function refreshWeather() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    fetchWeatherData(lat, lon);
+                },
+                error => {
+                    console.error("Geolocation error on refresh:", error);
+                    const weatherContent = document.getElementById('weather-content');
+                    weatherContent.innerHTML = `
+                        <div class="p-4 text-center">
+                            <i class="bi bi-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
+                            <p>Unable to refresh location. ${error.message}</p>
+                            <button onclick="requestLocationPermission()" class="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                Allow Location Access
+                            </button>
+                        </div>
+                    `;
+                }
+            );
+        }
+    }
+</script>
+</body>
+</html>
