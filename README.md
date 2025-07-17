@@ -58,3 +58,5 @@ Develop a machine learning-based precision farming system that recommends optima
 git clone https://github.com/your-username/precision-farming-ml.git
 cd precision-farming-ml
 pip install -r requirements.txt
+
+
